@@ -88,5 +88,5 @@ def remove_client(addr, cookie):
 
 def automatic_end(client):
     client.send(ERROR_MSG.encode())
-
+    client.close()
 start()

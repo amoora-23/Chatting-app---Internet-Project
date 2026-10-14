@@ -28,9 +28,15 @@ while True:
     client_socket.send(message)
 
     #recieve respose if exists
-    response = client_socket.recv(1024).decode()
+    try:
+        response = client_socket.recv(1024).decode()
+    except(ConnectionAbortedError, ConnectionResetError, BrokenPipeError): #handles the case where N clients are exceeded and the connection automatically closes from server side
+        print(ERROR_MSG)
+        print("connection closed")
+        break
+
     print("SERVER: "+response)
-    if(response == '' or response == ERROR_MSG):
+    if(response == ''):
         print("connection closed")
         client_socket.close()
         break
