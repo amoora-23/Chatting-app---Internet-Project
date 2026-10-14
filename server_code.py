@@ -10,9 +10,10 @@ SERVER = '127.0.0.1'
 ADDR = (SERVER, PORT)
 FORMAT = 'utf-8'
 ALLOWED_BYTES = 1024
-N_CLIENTS = 15
+N_CLIENTS = 100
 PENDING = 3
 DISCONNECT_MSG = "CLOSE SOCKET"
+ERROR_MSG = "maximum connections have been reached, try again later :)"
 ACTIVE_CLIENTS = []
 COOKIES = []
 
@@ -32,13 +33,15 @@ def start():
         client,addr = server_socket.accept()
         # when a connection to a client is accepted, {client} is the new port on the server that is used to communicate with the client device, which is why every time you connect a new client process to it the port will be different
         # and {add} is the client device's socket info (ip and port)
-        # Break the connection when 'CLOSE SOCKET' is recieved
-        cookie = add_client(addr)
-        chatThread = threading.Thread(target= chat, args = (client, addr, cookie))
-        chatThread.start()
-        print("new connection started")
-        print(f"active clients are {ACTIVE_CLIENTS}")
-        print(f"their unique IDs are {COOKIES}")
+        if len(COOKIES) >= N_CLIENTS:
+            automatic_end(client)
+        else:
+            cookie = add_client(addr)
+            chatThread = threading.Thread(target= chat, args = (client, addr, cookie))
+            chatThread.start()
+            print("new connection started")
+            print(f"active clients are {ACTIVE_CLIENTS}")
+            print(f"their unique IDs are {COOKIES}")
 
 
 def chat(client, addr, cookie):
@@ -64,7 +67,7 @@ def chat(client, addr, cookie):
             # send the response as bytes again
             returnMsg = returnMsg.encode()
             client.send(returnMsg)
-        except ConnectionResetError, BrokenPipeError:  # this is when the client process is terminated forcefully so a RST packet is sent which gives this error
+        except (ConnectionResetError, BrokenPipeError, ConnectionAbortedError):  # this is when the client process is terminated forcefully so a RST packet is sent which gives this error
             print(f"client {cookie} terminated unexpectedly")
             remove_client(addr, cookie)
             break
@@ -83,5 +86,7 @@ def remove_client(addr, cookie):
     ACTIVE_CLIENTS.remove(addr)
     COOKIES.remove(cookie)
 
+def automatic_end(client):
+    client.send(ERROR_MSG.encode())
 
 start()

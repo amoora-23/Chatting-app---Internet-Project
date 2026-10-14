@@ -6,6 +6,8 @@ import sys
 PORT = 5605
 SERVER = '127.0.0.1'
 ADDR = (SERVER, PORT)
+DISCONNECT_MSG = "CLOSE SOCKET"
+ERROR_MSG = "maximum connections have been reached, try again later :)"
 
 #initiate Client socket with the TCP connection
 client_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
@@ -26,10 +28,9 @@ while True:
     client_socket.send(message)
 
     #recieve respose if exists
-    response = client_socket.recv(1024)
-    if(response == b''):
+    response = client_socket.recv(1024).decode()
+    print("SERVER: "+response)
+    if(response == '' or response == ERROR_MSG):
         print("connection closed")
         client_socket.close()
         break
-    response = response.decode()
-    print("SERVER: "+response)
